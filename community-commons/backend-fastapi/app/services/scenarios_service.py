@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from ..models import models
+from .badges_service import evaluate_and_award_badges
 
 
 def list_scenarios(db: Session):
@@ -61,6 +62,14 @@ def apply_decision(db: Session, scenario_id: int, payload):
     else:
         msg = 'Neutral reaction: the community responds quietly.'
 
+    # After updating scores, evaluate badges
+    awarded = evaluate_and_award_badges(db, player.id, score)
+
+    # Compute unlocked scenarios based on total score
+    total_score = score.community_harmony + score.personal_integrity + score.social_capital
+    unlocked = db.query(models.Scenario).filter(models.Scenario.unlock_score <= total_score).all()
+    unlocked_list = [ { 'id': s.id, 'title': s.title, 'environment': s.environment } for s in unlocked ]
+
     return {
         'player_id': player.id,
         'updated_scores': {
@@ -68,5 +77,7 @@ def apply_decision(db: Session, scenario_id: int, payload):
             'personal_integrity': score.personal_integrity,
             'social_capital': score.social_capital,
         },
-        'message': msg
+        'message': msg,
+        'badges_awarded': awarded,
+        'unlocked_scenarios': unlocked_list,
     }

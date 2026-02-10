@@ -46,6 +46,8 @@ class DecisionResult(BaseModel):
     player_id: int
     updated_scores: CivicScore
     message: str
+    badges_awarded: Optional[List[Dict]] = []
+    unlocked_scenarios: Optional[List[Dict]] = []
 
 
 class PlayerProgress(BaseModel):
