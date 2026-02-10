@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=2]
+[ext_resource path="res://scenes/Main.tscn" type="PackedScene" id=1]
+
+[application]
+config/name="Community Commons"
+run/main_scene="res://scenes/Main.tscn"
