@@ -1,6 +1,22 @@
-[gd_scene load_steps=2 format=2]
-[ext_resource path="res://scenes/Main.tscn" type="PackedScene" id=1]
-
 [application]
+
 config/name="Community Commons"
+config/icon="res://icon.png"
 run/main_scene="res://scenes/Main.tscn"
+
+[autoload]
+
+GameState="*res://scripts/GameState.gd"
+
+[display]
+
+window/size/width=1024
+window/size/height=600
+
+[physics]
+
+common/enable_pause_aware_picking=true
+
+[rendering]
+
+environment/default_environment="res://default_env.tres"

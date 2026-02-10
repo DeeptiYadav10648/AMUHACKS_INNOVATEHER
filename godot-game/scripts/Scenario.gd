@@ -4,20 +4,23 @@ onready var description_label = $Description
 onready var choice1 = $Choice1
 onready var choice2 = $Choice2
 onready var choice3 = $Choice3
+onready var choice4 = $Choice4
 onready var score_hud = $ScoreHUD
 onready var http = $HTTPRequest
 onready var npc_label = $NPCDialogue
 
 var scenarios = []
+var current_scenario = null
 var current_index = 0
 
-const BACKEND_BASE := "http://127.0.0.1:8001/api"
+const BACKEND_BASE := "http://127.0.0.1:8000/api"
 
 func _ready():
     http.connect("request_completed", self, "_on_request_completed")
     choice1.connect("pressed", self, "_on_choice_pressed", [0])
     choice2.connect("pressed", self, "_on_choice_pressed", [1])
     choice3.connect("pressed", self, "_on_choice_pressed", [2])
+    choice4.connect("pressed", self, "_on_choice_pressed", [3])
     fetch_scenarios()
     update_score_hud()
 
@@ -30,61 +33,87 @@ func _on_request_completed(result, response_code, headers, body):
         var text = body.get_string_from_utf8()
         var data = parse_json(text)
         if typeof(data) == TYPE_ARRAY and data.size() > 0:
+            # Response from GET /scenarios
             scenarios = data
             current_index = 0
             show_current_scenario()
+        elif typeof(data) == TYPE_DICTIONARY and data.has('updated_scores'):
+            # Response from POST /scenarios/{id}/decide
+            handle_decision_response(data)
         else:
-            print("No scenarios returned")
+            print("Unexpected response:", text)
     else:
-        print("HTTP error fetching scenarios:", response_code)
+        var text = body.get_string_from_utf8()
+        print("HTTP error %d: %s" % [response_code, text])
 
 func show_current_scenario():
     if current_index >= scenarios.size():
-        description_label.text = "No more scenarios"
-        choice1.disabled = choice2.disabled = choice3.disabled = true
+        description_label.text = "No more scenarios - Game Loop Complete!"
+        choice1.disabled = choice2.disabled = choice3.disabled = choice4.disabled = true
         return
-    var s = scenarios[current_index]
-    description_label.text = s.get('description', '')
-    var ch = s.get('choices', [])
-    # Fill buttons or hide if not available
-    choice1.text = ch.size() > 0 ? ch[0].get('text', '') : ""
-    choice1.visible = ch.size() > 0
-    choice2.text = ch.size() > 1 ? ch[1].get('text', '') : ""
-    choice2.visible = ch.size() > 1
-    choice3.text = ch.size() > 2 ? ch[2].get('text', '') : ""
-    choice3.visible = ch.size() > 2
+    
+    current_scenario = scenarios[current_index]
+    description_label.text = current_scenario.get('description', '')
+    var choices = current_scenario.get('choices', [])
+    
+    # Show available choices
+    choice1.text = choices.size() > 0 ? choices[0].get('text', '') : ""
+    choice1.visible = choices.size() > 0
+    choice1.disabled = false
+    
+    choice2.text = choices.size() > 1 ? choices[1].get('text', '') : ""
+    choice2.visible = choices.size() > 1
+    choice2.disabled = false
+    
+    choice3.text = choices.size() > 2 ? choices[2].get('text', '') : ""
+    choice3.visible = choices.size() > 2
+    choice3.disabled = false
+    
+    choice4.text = choices.size() > 3 ? choices[3].get('text', '') : ""
+    choice4.visible = choices.size() > 3
+    choice4.disabled = false
 
 func _on_choice_pressed(choice_index):
-    var s = scenarios[current_index]
-    var ch = s.get('choices', [])
-    if choice_index >= ch.size():
+    if current_scenario == null:
         return
-    var choice = ch[choice_index]
-    # Submit decision to backend
+    
+    var choices = current_scenario.get('choices', [])
+    if choice_index >= choices.size():
+        return
+    
+    var choice = choices[choice_index]
     var player_id = null
     if Engine.has_singleton("GameState"):
         player_id = Engine.get_singleton("GameState").player_id
+    
     if player_id == null:
-        print("No player id — return to character creation")
+        print("No player id")
         get_tree().change_scene("res://scenes/CharacterCreation.tscn")
         return
+    
+    # Disable buttons while processing
+    choice1.disabled = choice2.disabled = choice3.disabled = choice4.disabled = true
+    
+    # Send decision to backend
     var payload = {"player_id": player_id, "choice_id": choice.get('id')}
     var json_data = to_json(payload)
-    var url = BACKEND_BASE + "/scenarios/%s/decide" % s.get('id')
+    var url = BACKEND_BASE + "/scenarios/%s/decide" % current_scenario.get('id')
     http.request(url, [], true, HTTPClient.METHOD_POST, json_data)
 
 func handle_decision_response(data):
-    # data expected to contain updated_scores and message
+    # Update scores
     var updated = data.get('updated_scores', {})
-    var msg = data.get('message', '')
-    # update autoload GameState
     if Engine.has_singleton("GameState"):
         var gs = Engine.get_singleton("GameState")
         gs.update_scores(updated)
-    # update HUD and NPC reaction
+    
+    # Update HUD and show NPC reaction
     update_score_hud()
-    npc_label.text = msg
-    # simple progression: advance to next scenario
+    npc_label.text = data.get('message', 'Decision recorded!')
+    
+    # Move to next scenario
+    yield(get_tree(), "idle_frame")
+    yield(get_tree().create_timer(2.0), "timeout")  # Pause 2 seconds before next scenario
     current_index += 1
     show_current_scenario()
 
@@ -92,30 +121,12 @@ func update_score_hud():
     var gs = null
     if Engine.has_singleton("GameState"):
         gs = Engine.get_singleton("GameState")
-    var s = gs ? gs.civic_scores : {"community_harmony":0, "personal_integrity":0, "social_capital":0}
-    score_hud.text = "Harmony: %d  Integrity: %d  Social: %d" % [s.community_harmony, s.personal_integrity, s.social_capital]
-extends Control
+    
+    var scores = gs.civic_scores if gs else {"community_harmony": 0, "personal_integrity": 0, "social_capital": 0}
+    var harmony = scores.get('community_harmony', 0)
+    var integrity = scores.get('personal_integrity', 0)
+    var social = scores.get('social_capital', 0)
+    
+    score_hud.text = "Harmony: %d | Integrity: %d | Social Capital: %d" % [harmony, integrity, social]
 
-onready var desc = $Description
-onready var c1 = $Choice1
-onready var c2 = $Choice2
-onready var c3 = $Choice3
-onready var hud = $ScoreHUD
-
-func _ready():
-    # Placeholder text; in full app fetch scenario data from backend
-    desc.text = "Scenario will appear here"
-    c1.text = "Choice A"
-    c2.text = "Choice B"
-    c3.text = "Choice C"
-    c1.connect("pressed", self, "on_choice", [1])
-    c2.connect("pressed", self, "on_choice", [2])
-    c3.connect("pressed", self, "on_choice", [3])
-    update_hud(0,0,0)
-
-func on_choice(choice_id):
-    # TODO: send chosen id to backend and update HUD
-    print("Chosen:", choice_id)
-
-func update_hud(ch, pi, sc):
     hud.text = "Harmony: %d  Integrity: %d  Social: %d" % [ch, pi, sc]

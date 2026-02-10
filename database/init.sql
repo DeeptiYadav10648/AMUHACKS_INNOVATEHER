@@ -44,3 +44,25 @@ CREATE TABLE IF NOT EXISTS badges (
     name VARCHAR(255),
     description VARCHAR(512)
 );
+
+-- NPCs and relationships
+CREATE TABLE IF NOT EXISTS npcs (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    role VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS npc_relationships (
+    id SERIAL PRIMARY KEY,
+    player_id INTEGER REFERENCES player_profiles(id),
+    npc_id INTEGER REFERENCES npcs(id),
+    relationship_score INTEGER DEFAULT 0,
+    note TEXT
+);
+
+-- Environment state per scenario
+CREATE TABLE IF NOT EXISTS environment_state (
+    id SERIAL PRIMARY KEY,
+    scenario_id INTEGER REFERENCES scenarios(id),
+    state JSONB DEFAULT '{}'
+);
