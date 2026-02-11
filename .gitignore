@@ -1,9 +1,0 @@
-__pycache__/
-venv/
-.env
-*.pyc
-/.idea
-/.vscode
-/.DS_Store
-node_modules/
-export/

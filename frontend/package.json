@@ -1,0 +1,13 @@
+{
+  "name": "citytrack-frontend",
+  "version": "1.0.0",
+  "description": "CityTrack Civic Sense Simulator - Frontend (Phaser + React)",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.1"
+  }
+}

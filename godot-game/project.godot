@@ -11,18 +11,26 @@ config_version=5
 [application]
 
 config/name="Community Commons"
-run/main_scene="res://scenes/CharacterCreation.tscn"
+run/main_scene="uid://y7yswcg4yjec"
 config/features=PackedStringArray("4.6")
 config/icon="res://icon.png"
 
 [autoload]
 
 GameState="*res://scripts/GameState.gd"
+GameManager="*res://scripts/GameManager.gd"
 
 [display]
 
 window/size/width=1024
 window/size/height=600
+
+[input]
+
+interact={
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":69,"physical_keycode":69,"key_label":69,"unicode":101,"location":0,"echo":false,"script":null)
+]
+}
 
 [physics]
 
