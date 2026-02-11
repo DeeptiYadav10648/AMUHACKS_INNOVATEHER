@@ -1,0 +1,11 @@
+63f7b34db8d8cdea90c76aacccf841ec
+::res://::1770790196
+::res://scenes/::1770736466
+CharacterCreation.tscn::PackedScene::-1::1770740702::0::1::::<><><>0<>0<><>::res://scripts/CharacterCreation.gd
+Main.tscn::PackedScene::-1::1770736492::0::1::::<><><>0<>0<><>::res://scripts/Main.gd
+Scenario.tscn::PackedScene::-1::1770741568::0::1::::<><><>0<>0<><>::res://scripts/Scenario.gd
+::res://scripts/::1770743985
+CharacterCreation.gd::GDScript::6412578016396439841::1770740713::0::1::::<>Control<><>0<>0<><>::
+GameState.gd::GDScript::3740955987531074095::1770740982::0::1::::<>Node<><>0<>0<><>::
+Main.gd::GDScript::4848517716913990098::1770736492::0::1::::<>Node2D<><>0<>0<><>::
+Scenario.gd::GDScript::5617428106711350431::1770743985::0::1::::<>Control<><>0<>0<><>::

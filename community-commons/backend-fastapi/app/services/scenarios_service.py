@@ -57,21 +57,50 @@ def apply_decision(db: Session, scenario_id: int, payload):
     db.commit()
     db.refresh(score)
 
-    # simple NPC reaction message based on net effect
-    net = eff.get('community_harmony', 0) + eff.get('personal_integrity', 0) + eff.get('social_capital', 0)
-    if net >= 5:
-        msg = 'Positive reaction: community notices your good deed.'
-    elif net <= -3:
-        msg = 'Negative reaction: some people are upset.'
+    # Determine environment status based on harmony score
+    harmony = score.community_harmony
+    if harmony >= 10:
+        env_status = "Thriving"
+    elif harmony >= 0:
+        env_status = "Calm"
     else:
-        msg = 'Neutral reaction: the community responds quietly.'
+        env_status = "Tense"
+
+    # NPC reaction message based on effect
+    eff_sum = eff.get('community_harmony', 0) + eff.get('personal_integrity', 0) + eff.get('social_capital', 0)
+    if eff_sum >= 5:
+        npc_msg = 'Your neighbor appreciated your thoughtful approach.'
+    elif eff_sum >= 2:
+        npc_msg = 'The community took notice of your action.'
+    elif eff_sum <= -3:
+        npc_msg = 'The situation worsened from your choice.'
+    else:
+        npc_msg = 'The community responded with indifference.'
+
+    # Gather all alternative choices for review
+    all_choices = db.query(models.Choice).filter(
+        models.Choice.scenario_id == scenario_id
+    ).all()
+    alternatives = [
+        {
+            'id': c.id,
+            'text': c.text,
+            'effect': c.effect or {},
+            'is_chosen': c.id == choice.id
+        }
+        for c in all_choices
+    ]
 
     return {
-        'player_id': player.id,
+        'decision_id': dec.id,
+        'chosen_text': choice.text,
+        'chosen_effect': eff,
         'updated_scores': {
             'community_harmony': score.community_harmony,
             'personal_integrity': score.personal_integrity,
             'social_capital': score.social_capital,
         },
-        'message': msg
+        'environment_status': env_status,
+        'npc_message': npc_msg,
+        'alternatives': alternatives
     }
